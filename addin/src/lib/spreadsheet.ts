@@ -156,13 +156,19 @@ export function splitSourceCell(ref: string): [string, string] {
  * Describes a cell by its column heading and the first text in its row, e.g.
  * "Amount · INV-10443", so a hit or a tag can be read without opening the file.
  */
-export function cellContext(sheet: SourceSheet, rowIndex: number, colIndex: number): string {
-  // The heading row is the first row made only of text with at least two cells,
-  // which skips report titles above the table.
-  const headerRow = sheet.rows.findIndex((r, i) => {
+/**
+ * The heading row is the first row made only of text with at least two cells,
+ * which skips report titles above the table. -1 when there is none.
+ */
+export function findHeaderRow(sheet: SourceSheet, beforeRow = Infinity): number {
+  return sheet.rows.findIndex((r, i) => {
     const cells = r.filter((c): c is SourceCell => c !== null);
-    return i < rowIndex && cells.length >= 2 && cells.every((c) => typeof c.value === "string");
+    return i < beforeRow && cells.length >= 2 && cells.every((c) => typeof c.value === "string");
   });
+}
+
+export function cellContext(sheet: SourceSheet, rowIndex: number, colIndex: number): string {
+  const headerRow = findHeaderRow(sheet, rowIndex);
   const h = headerRow >= 0 ? sheet.rows[headerRow][colIndex] : null;
   const header = h && typeof h.value === "string" ? h.text : "";
   const label = sheet.rows[rowIndex]?.find(
@@ -180,7 +186,7 @@ export interface SearchHit {
 
 const MAX_HITS = 200;
 
-function asAmount(s: string): number | null {
+export function asAmount(s: string): number | null {
   const t = s.trim();
   const negative = /^\(.*\)$/.test(t) || t.startsWith("-");
   const digits = t.replace(/[()$€£,\s-]/g, "");

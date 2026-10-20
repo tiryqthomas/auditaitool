@@ -60,6 +60,15 @@ With the sample files you should see 10442 agree, an amount exception on 10443 (
 
 The AI call runs in the Supabase Edge Function in `../supabase/functions/extract`, which holds the Anthropic API key as the `ANTHROPIC_API_KEY` secret. The add-in only knows the function's URL and the project's public anon key.
 
+## Pull a sample and test it
+
+1. Add [`samples/client-sales-ledger.xlsx`](../samples/client-sales-ledger.xlsx) and select it. **Pull a sample** appears under Search.
+2. Check the item ID and amount columns, pick **Random** or **Monetary unit**, enter a sample size, and optionally an amount above which every item is tested (key items). The list updates as you change settings.
+3. Click **Write Sample sheet**. A new *Sample* sheet gets the selected rows plus a **Population ref** column tagged to each item's row in the ledger, and a *Sample memo* sheet records the population, method, interval, key items and seed.
+4. Add the invoices and use **Fill whole sample** on the Sample sheet to test every item against its support.
+
+The selection is done in code, not by the AI, so it is unbiased and can be re-performed: the same file, settings and seed always pick the same items. Monetary unit sampling skips zero and negative items (such as credit memos) and says how many, so they can be tested separately.
+
 ## Search a client spreadsheet
 
 1. Click **Add documents** and pick [`samples/client-sales-ledger.xlsx`](../samples/client-sales-ledger.xlsx) (a client sales ledger and customer list) or [`samples/client-ar-aging.csv`](../samples/client-ar-aging.csv). Select it in the list.
