@@ -2,11 +2,13 @@ import { useEffect, useRef, useState, type MouseEvent } from "react";
 import { fromBase64, getDoc, type StoredDoc } from "../lib/docStore";
 import { boxFromPoints, scaleBox, textInBox } from "../lib/geometry";
 import { loadPdf, pageTextRuns, type PdfDoc } from "../lib/pdf";
+import { isSpreadsheet } from "../lib/spreadsheet";
 import type { Box, PaneMessage, ViewerMessage } from "../lib/types";
+import { SheetViewer } from "./SheetViewer";
 
 const SCALE = 1.5;
 
-function send(message: ViewerMessage) {
+export function send(message: ViewerMessage) {
   if (Office.context?.ui?.messageParent) Office.context.ui.messageParent(JSON.stringify(message));
   else console.info("viewer message", message);
 }
@@ -39,15 +41,34 @@ function boxFromParams(p: URLSearchParams): Box | null {
 
 /**
  * Source document viewer, opened by the task pane as an Office dialog.
- * mode=tag: the auditor drags a box around a value to link it to a cell.
- * mode=trace: opens at a tag's page with its region highlighted.
+ * mode=tag: the auditor picks a value to link to a cell.
+ * mode=trace: opens at a tag's source with it highlighted.
  */
 export function Viewer({ params }: { params: URLSearchParams }) {
   const docId = params.get("docId") ?? "";
   const mode = params.get("mode") === "trace" ? "trace" : "tag";
+  const [doc, setDoc] = useState<StoredDoc | null>(null);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    loadDocument(docId).then(setDoc, (e: Error) => setError(e.message));
+  }, [docId]);
+
+  if (error) return <p className="error">{error}</p>;
+  if (!doc) return <p className="muted">Loading…</p>;
+  return isSpreadsheet(doc.name) ? (
+    <SheetViewer doc={doc} mode={mode} sourceCell={params.get("cell") ?? undefined} />
+  ) : (
+    <PdfViewer doc={doc} mode={mode} params={params} />
+  );
+}
+
+/** mode=tag: drag a box around a value. mode=trace: opens at the tag's page with its region highlighted. */
+function PdfViewer({ doc, mode, params }: { doc: StoredDoc; mode: "tag" | "trace"; params: URLSearchParams }) {
+  const docId = doc.docId;
+  const name = doc.name;
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [pdf, setPdf] = useState<PdfDoc | null>(null);
-  const [name, setName] = useState("");
   const [pageNo, setPageNo] = useState(Number(params.get("page")) || 1);
   const [highlight, setHighlight] = useState<Box | null>(mode === "trace" ? boxFromParams(params) : null);
   const [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(null);
@@ -55,14 +76,8 @@ export function Viewer({ params }: { params: URLSearchParams }) {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    loadDocument(docId)
-      .then((doc) => {
-        setName(doc.name);
-        return loadPdf(doc.bytes);
-      })
-      .then(setPdf)
-      .catch((e: Error) => setError(e.message));
-  }, [docId]);
+    loadPdf(doc.bytes).then(setPdf, (e: Error) => setError(e.message));
+  }, [doc]);
 
   useEffect(() => {
     if (!pdf || !canvasRef.current) return;
