@@ -76,7 +76,7 @@ export function ExtractPanel({ doc, onWritten }: { doc?: StoredDoc; onWritten: (
 
   return (
     <section>
-      <h2>Extract with AI</h2>
+      <h2>Fill one row</h2>
       <p className="muted">Select the cells to fill in one row of your testing table. The column headings say what to find.</p>
       <textarea
         placeholder="Optional instructions, e.g. use the invoice date, not the ship date"

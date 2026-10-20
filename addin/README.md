@@ -38,7 +38,20 @@ Then sideload `manifest.local.xml` instead of `manifest.xml`:
 2. Select a cell, click **Tag from document**, drag a box around `$12,480.00`, and click **Use this value**.
 3. The cell gets `12480` with an amber border. Select it again and click **Open source** to jump back to the highlighted total.
 
-## Extract with AI (Phase 1)
+## Fill a whole sample
+
+1. Open [`samples/revenue-sample-4-items.xlsx`](../samples/revenue-sample-4-items.xlsx). It lists four sampled invoices with the recorded amounts.
+2. Click **Add PDFs** and pick all four `samples/sample-invoice-*.pdf` files.
+3. Under **Fill whole sample**, check **Match rows by** is *Invoice #* and click **Fill sample**. Each document is read once and matched to the row with the same invoice number (prefixes like `INV-` and leading zeros are ignored).
+4. Review the summary, then click **Write results**:
+   - empty cells are filled from the document (amber, proposed);
+   - cells that already agree with the document are tagged to it without changing (amber, proposed);
+   - cells that differ are left as they are and marked red as exceptions;
+   - rows with no matching document, and documents not in the sample, are listed for you.
+
+With the sample files you should see 10442 agree, an amount exception on 10443 (7,350.00 recorded, 7,530.00 on the invoice), 10444 filled, 10445 with no document, and invoice 10450 reported as not in the sample.
+
+## Extract with AI (one row)
 
 1. Open [`samples/revenue-testing-sample.xlsx`](../samples/revenue-testing-sample.xlsx) (headings: Invoice #, Date, Customer, Amount) and add the sample invoice in the Evidence pane.
 2. Select A2:D2 and click **Extract from document**. The column headings are the fields the AI looks for.
