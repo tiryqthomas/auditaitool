@@ -1,14 +1,35 @@
 import { useEffect, useRef, useState, type MouseEvent } from "react";
-import { getDoc } from "../lib/docStore";
+import { fromBase64, getDoc, type StoredDoc } from "../lib/docStore";
 import { boxFromPoints, scaleBox, textInBox } from "../lib/geometry";
 import { loadPdf, pageTextRuns, type PdfDoc } from "../lib/pdf";
-import type { Box, ViewerMessage } from "../lib/types";
+import type { Box, PaneMessage, ViewerMessage } from "../lib/types";
 
 const SCALE = 1.5;
 
 function send(message: ViewerMessage) {
   if (Office.context?.ui?.messageParent) Office.context.ui.messageParent(JSON.stringify(message));
   else console.info("viewer message", message);
+}
+
+const MISSING = "This document isn't stored on this computer. Add it again from the task pane.";
+
+/**
+ * Loads a document from local storage, or asks the task pane for it when this
+ * dialog can't see the task pane's storage (Excel on the web partitions it).
+ */
+async function loadDocument(docId: string): Promise<StoredDoc> {
+  const local = await getDoc(docId).catch(() => undefined);
+  if (local) return local;
+  if (!Office.context?.ui?.addHandlerAsync) throw new Error(MISSING);
+  return new Promise((resolve, reject) => {
+    Office.context.ui.addHandlerAsync(Office.EventType.DialogParentMessageReceived, (arg) => {
+      const m = JSON.parse((arg as { message: string }).message) as PaneMessage;
+      if (m.docId !== docId) return;
+      if (m.type === "document") resolve({ docId, name: m.name, addedAt: "", bytes: fromBase64(m.base64) });
+      else reject(new Error(MISSING));
+    });
+    send({ type: "need-document", docId });
+  });
 }
 
 function boxFromParams(p: URLSearchParams): Box | null {
@@ -34,9 +55,8 @@ export function Viewer({ params }: { params: URLSearchParams }) {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    getDoc(docId)
+    loadDocument(docId)
       .then((doc) => {
-        if (!doc) throw new Error("This document isn't stored on this computer. Add it again from the task pane.");
         setName(doc.name);
         return loadPdf(doc.bytes);
       })
