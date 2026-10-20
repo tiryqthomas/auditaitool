@@ -4,16 +4,16 @@
            xmlns:bt="http://schemas.microsoft.com/office/officeappbasictypes/1.0"
            xmlns:ov="http://schemas.microsoft.com/office/taskpaneappversionoverrides"
            xsi:type="TaskPaneApp">
-  <Id>b009918c-9fa5-4991-81db-d4847b9f8cc5</Id>
+  <Id>f36e7aa7-71ba-44ab-8eb4-549ada36e4ef</Id>
   <Version>0.1.0.0</Version>
   <ProviderName>Audit AI Tool</ProviderName>
   <DefaultLocale>en-US</DefaultLocale>
   <DisplayName DefaultValue="Audit Evidence"/>
   <Description DefaultValue="Tag workpaper cells to the exact place in client documents they came from."/>
-  <IconUrl DefaultValue="https://localhost:3000/icon-32.png"/>
-  <HighResolutionIconUrl DefaultValue="https://localhost:3000/icon-80.png"/>
+  <IconUrl DefaultValue="https://tiryqthomas.github.io/auditaitool/icon-32.png"/>
+  <HighResolutionIconUrl DefaultValue="https://tiryqthomas.github.io/auditaitool/icon-80.png"/>
   <AppDomains>
-    <AppDomain>https://localhost:3000</AppDomain>
+    <AppDomain>https://tiryqthomas.github.io</AppDomain>
   </AppDomains>
   <Hosts>
     <Host Name="Workbook"/>
@@ -25,7 +25,7 @@
     </Sets>
   </Requirements>
   <DefaultSettings>
-    <SourceLocation DefaultValue="https://localhost:3000/taskpane.html"/>
+    <SourceLocation DefaultValue="https://tiryqthomas.github.io/auditaitool/taskpane.html"/>
   </DefaultSettings>
   <Permissions>ReadWriteDocument</Permissions>
   <VersionOverrides xmlns="http://schemas.microsoft.com/office/taskpaneappversionoverrides" xsi:type="VersionOverridesV1_0">
@@ -65,12 +65,12 @@
     </Hosts>
     <Resources>
       <bt:Images>
-        <bt:Image id="Icon.16" DefaultValue="https://localhost:3000/icon-16.png"/>
-        <bt:Image id="Icon.32" DefaultValue="https://localhost:3000/icon-32.png"/>
-        <bt:Image id="Icon.80" DefaultValue="https://localhost:3000/icon-80.png"/>
+        <bt:Image id="Icon.16" DefaultValue="https://tiryqthomas.github.io/auditaitool/icon-16.png"/>
+        <bt:Image id="Icon.32" DefaultValue="https://tiryqthomas.github.io/auditaitool/icon-32.png"/>
+        <bt:Image id="Icon.80" DefaultValue="https://tiryqthomas.github.io/auditaitool/icon-80.png"/>
       </bt:Images>
       <bt:Urls>
-        <bt:Url id="Taskpane.Url" DefaultValue="https://localhost:3000/taskpane.html"/>
+        <bt:Url id="Taskpane.Url" DefaultValue="https://tiryqthomas.github.io/auditaitool/taskpane.html"/>
       </bt:Urls>
       <bt:ShortStrings>
         <bt:String id="Group.Label" DefaultValue="Audit"/>

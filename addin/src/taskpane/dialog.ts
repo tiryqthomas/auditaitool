@@ -17,7 +17,8 @@ export function openViewer(opts: ViewerOptions, onMessage: (m: ViewerMessage, cl
     q.set("w", String(opts.box.width));
     q.set("h", String(opts.box.height));
   }
-  const url = `${location.origin}/viewer.html?${q}`;
+  // Relative to the task pane so it works under any hosting path.
+  const url = new URL(`viewer.html?${q}`, location.href).toString();
   Office.context.ui.displayDialogAsync(url, { height: 85, width: 60, displayInIframe: false }, (result) => {
     if (result.status !== Office.AsyncResultStatus.Succeeded) {
       console.error("Could not open viewer", result.error);

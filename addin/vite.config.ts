@@ -15,6 +15,8 @@ async function httpsOptions() {
 }
 
 export default defineConfig(async () => ({
+  // GitHub Pages serves the add-in from /auditaitool/; local dev serves from /.
+  base: process.env.BASE_PATH ?? "/",
   plugins: [react()],
   server: { port: 3000, https: await httpsOptions() },
   build: {
