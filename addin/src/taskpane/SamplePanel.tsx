@@ -4,6 +4,7 @@ import { toBase64, type StoredDoc } from "../lib/docStore";
 import { checkAgainstDocument } from "../lib/extraction";
 import { loadPdf, pageTextRuns } from "../lib/pdf";
 import { planSample, type CellOutcome, type DocResult, type SamplePlan } from "../lib/sample";
+import { POPULATION_REF } from "../lib/sampleSheet";
 import { readSampleTable } from "../lib/sheet";
 import { addTags, awaitingReview, latestForCell, readTags } from "../lib/tags";
 import type { EvidenceTag } from "../lib/types";
@@ -24,6 +25,9 @@ async function mapLimited<T, R>(items: T[], limit: number, fn: (item: T) => Prom
   );
   return out;
 }
+
+/** Columns to look for in each document: everything except a Sample sheet's population reference. */
+const testableHeaders = (headers: string[]) => headers.filter((h) => h !== POPULATION_REF);
 
 function guessKeyHeader(headers: string[]): string {
   return headers.find((h) => /invoice|inv\b|#|number|no\.?$|ref/i.test(h)) ?? headers[0] ?? "";
@@ -48,9 +52,9 @@ export function SamplePanel({ docs, onWritten }: { docs: StoredDoc[]; onWritten:
 
   const loadHeaders = async () => {
     try {
-      const table = await readSampleTable();
-      setHeaders(table.headers);
-      setKeyHeader((k) => (k && table.headers.includes(k) ? k : guessKeyHeader(table.headers)));
+      const fields = testableHeaders((await readSampleTable()).headers);
+      setHeaders(fields);
+      setKeyHeader((k) => (k && fields.includes(k) ? k : guessKeyHeader(fields)));
     } catch (e) {
       setError((e as Error).message);
     }
@@ -63,8 +67,9 @@ export function SamplePanel({ docs, onWritten }: { docs: StoredDoc[]; onWritten:
     setFailed([]);
     try {
       const table = await readSampleTable();
-      setHeaders(table.headers);
-      const key = table.headers.includes(keyHeader) ? keyHeader : guessKeyHeader(table.headers);
+      const toFind = testableHeaders(table.headers);
+      setHeaders(toFind);
+      const key = toFind.includes(keyHeader) ? keyHeader : guessKeyHeader(toFind);
       setKeyHeader(key);
       const rows = table.rows
         .map((r) => ({ ...r, key: r.cells[key]?.text.trim() ?? "" }))
@@ -80,9 +85,9 @@ export function SamplePanel({ docs, onWritten }: { docs: StoredDoc[]; onWritten:
           const pages = await Promise.all(
             Array.from({ length: pdf.numPages }, (_, i) => pdf.getPage(i + 1).then(pageTextRuns)),
           );
-          const answers = await extractor.extract(toBase64(doc.bytes), table.headers);
+          const answers = await extractor.extract(toBase64(doc.bytes), toFind);
           const fields = checkAgainstDocument(
-            table.headers.map((h) => answers.find((a) => a.field === h) ?? { field: h, value: null, quote: null, page: null }),
+            toFind.map((h) => answers.find((a) => a.field === h) ?? { field: h, value: null, quote: null, page: null }),
             pages,
           );
           return { docId: doc.docId, docName: doc.name, fields };

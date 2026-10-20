@@ -96,6 +96,11 @@ created_by, created_at, verified_by, verified_at, model_version, prompt_id
 
 **Refining:** the auditor can redraw the box, pick a different document, or edit the value; the tag keeps its history.
 
+**Per-cell fixes (requested by Ti, 2026-10-20):**
+- **Remove tag:** clears a cell's tag (recorded as a "removed" row in the history, so the trail survives) and asks whether to clear the value too.
+- **Re-ask AI for this cell:** reruns extraction for just the selected cell against the same document, with an optional hint ("use the invoice total, not the subtotal"). The new answer goes through the same verification and replaces the tag as *proposed*.
+- **Bulk verify:** sign off several selected cells at once.
+
 ## 6. Agent layer
 
 ### Editor agent
@@ -120,6 +125,11 @@ created_by, created_at, verified_by, verified_at, model_version, prompt_id
 - **Reproducibility:** store prompts, model versions and retrieval results so a reviewer can see why the AI produced an answer.
 - **Measuring accuracy:** build an internal test set of real-looking audit documents with known answers; track field-level precision/recall per release; block releases that regress.
 - **Client data security:** encryption at rest and in transit, per-firm / per-engagement isolation, no model training on client data (use LLM API terms that guarantee this), SSO via Entra ID, data residency options, and a path to SOC 2. Firms will ask about all of this before a pilot.
+- **Keeping client data away from AI (requested by Ti, 2026-10-20):** offer a per-engagement AI mode:
+  - *Off:* nothing leaves the auditor's computer. Manual tagging, Find, matching and sign-off still work.
+  - *Firm's own cloud:* AI calls go to Claude through the firm's own AWS Bedrock, Google Vertex AI or Microsoft Foundry account, so documents stay inside the firm's cloud and contracts.
+  - *Direct API with zero data retention:* for firms that accept it, under an Anthropic zero-data-retention agreement (confirm current terms).
+  - Optional redaction of names and identifiers before any AI call, and a per-call log of exactly what was sent.
 
 ## 8. Tech stack (proposed)
 
@@ -145,6 +155,8 @@ created_by, created_at, verified_by, verified_at, model_version, prompt_id
 - Upload digital PDFs and Excel files to an engagement.
 - Manual tagging (draw box, link to cell) and AI extraction from a single prompt, with verification.
 - Tag statuses and grid markers; tag inspector.
+- Per-cell fixes: remove tag, re-ask AI for one cell, bulk verify.
+- Sample selection from a client listing (random or monetary unit, key items, recorded seed and memo), feeding straight into whole-sample testing. Selection is done in code, never by the AI, so it is unbiased and reproducible.
 - *Exit:* an auditor can vouch a 25-item sample against digital invoices, with every value traced.
 
 **Phase 2: Testing workflows**

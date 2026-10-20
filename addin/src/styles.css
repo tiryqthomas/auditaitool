@@ -68,3 +68,6 @@ button.link { border: none; background: none; padding: 0; margin: 0; color: #007
 .hits .where { font-family: monospace; font-size: 12px; }
 .viewer-bar select { width: auto; margin-top: 0; }
 p.warn { color: #8a5a00; margin: 4px 0; }
+.field input { font: inherit; width: 100%; box-sizing: border-box; margin-top: 2px; }
+.inline-fields { display: flex; gap: 8px; }
+.inline-fields .field { flex: 1; min-width: 0; }

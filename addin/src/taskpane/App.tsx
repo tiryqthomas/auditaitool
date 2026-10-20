@@ -19,6 +19,7 @@ import { openViewer } from "./dialog";
 import { ExtractPanel } from "./ExtractPanel";
 import { SamplePanel } from "./SamplePanel";
 import { SearchPanel, type SheetResult } from "./SearchPanel";
+import { SelectSamplePanel } from "./SelectSamplePanel";
 
 async function activeCellAddress(): Promise<string> {
   return Excel.run(async (context) => {
@@ -246,6 +247,16 @@ export function App() {
 
       {selectedDoc && isSpreadsheet(selectedDoc.name) && (
         <SearchPanel doc={selectedDoc} cell={cell} onShow={showSheetResult} onUse={useSheetResult} />
+      )}
+
+      {selectedDoc && isSpreadsheet(selectedDoc.name) && (
+        <SelectSamplePanel
+          doc={selectedDoc}
+          onWritten={(m) => {
+            setMessage(m);
+            refreshSelection();
+          }}
+        />
       )}
 
       <section>
