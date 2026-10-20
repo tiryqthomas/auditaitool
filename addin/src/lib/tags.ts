@@ -74,22 +74,34 @@ export async function findTag(cell: string): Promise<EvidenceTag | undefined> {
 }
 
 /** Writes the value into the cell, records the tag and marks the cell by status. */
-export async function addTag(tag: EvidenceTag, value: string): Promise<void> {
+export function addTag(tag: EvidenceTag, value: string): Promise<void> {
+  return addTags([{ tag, value }]);
+}
+
+/**
+ * Records several tags in one batch. A write without a value leaves the cell's
+ * existing content alone and only marks it (used for exceptions, where the
+ * workpaper value must not be overwritten by what the document says).
+ */
+export async function addTags(writes: { tag: EvidenceTag; value?: string }[]): Promise<void> {
+  if (writes.length === 0) return;
   await Excel.run(async (context) => {
     const sheet = await evidenceSheet(context);
     const used = sheet.getUsedRange();
     used.load("rowCount");
     await context.sync();
-    sheet.getRangeByIndexes(used.rowCount, 0, 1, COLUMNS.length).values = [tagToRow(tag)];
+    sheet.getRangeByIndexes(used.rowCount, 0, writes.length, COLUMNS.length).values = writes.map((w) => tagToRow(w.tag));
 
-    const [sheetName, address] = splitAddress(tag.cell);
-    const target = context.workbook.worksheets.getItem(sheetName).getRange(address);
-    target.values = [[toCellValue(value)]];
-    for (const edge of ["EdgeTop", "EdgeBottom", "EdgeLeft", "EdgeRight"] as const) {
-      const border = target.format.borders.getItem(edge);
-      border.style = "Continuous";
-      border.weight = "Medium";
-      border.color = STATUS_COLOR[tag.status];
+    for (const { tag, value } of writes) {
+      const [sheetName, address] = splitAddress(tag.cell);
+      const target = context.workbook.worksheets.getItem(sheetName).getRange(address);
+      if (value !== undefined) target.values = [[toCellValue(value)]];
+      for (const edge of ["EdgeTop", "EdgeBottom", "EdgeLeft", "EdgeRight"] as const) {
+        const border = target.format.borders.getItem(edge);
+        border.style = "Continuous";
+        border.weight = "Medium";
+        border.color = STATUS_COLOR[tag.status];
+      }
     }
     await context.sync();
   });

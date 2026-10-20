@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useState, type ChangeEvent } from "react";
-import { listDocs, putDoc, type StoredDoc } from "../lib/docStore";
+import { deleteDoc, listDocs, putDoc, type StoredDoc } from "../lib/docStore";
 import { sha256Hex } from "../lib/hash";
 import { addTag, findTag } from "../lib/tags";
 import type { EvidenceTag } from "../lib/types";
 import { openViewer } from "./dialog";
 import { ExtractPanel } from "./ExtractPanel";
+import { SamplePanel } from "./SamplePanel";
 
 async function activeCellAddress(): Promise<string> {
   return Excel.run(async (context) => {
@@ -53,6 +54,13 @@ export function App() {
     refreshDocs();
   };
 
+  const removeSelectedDoc = async () => {
+    if (!docId) return;
+    await deleteDoc(docId);
+    setDocId("");
+    refreshDocs();
+  };
+
   const tagFromDocument = () => {
     const targetCell = cell;
     const doc = docs.find((d) => d.docId === docId);
@@ -90,19 +98,27 @@ export function App() {
       <section>
         <h2>Evidence</h2>
         <label className="upload">
-          Add PDF
+          Add PDFs
           <input type="file" accept="application/pdf" multiple onChange={onUpload} hidden />
         </label>
         {docs.length === 0 ? (
           <p className="muted">No documents yet.</p>
         ) : (
-          <select value={docId} onChange={(e) => setDocId(e.target.value)}>
-            {docs.map((d) => (
-              <option key={d.docId} value={d.docId}>
-                {d.name}
-              </option>
-            ))}
-          </select>
+          <>
+            <select value={docId} onChange={(e) => setDocId(e.target.value)}>
+              {docs.map((d) => (
+                <option key={d.docId} value={d.docId}>
+                  {d.name}
+                </option>
+              ))}
+            </select>
+            <p className="muted">
+              {docs.length} document{docs.length === 1 ? "" : "s"} added.{" "}
+              <button className="link" onClick={removeSelectedDoc}>
+                Remove selected
+              </button>
+            </p>
+          </>
         )}
       </section>
 
@@ -126,6 +142,14 @@ export function App() {
           </button>
         )}
       </section>
+
+      <SamplePanel
+        docs={docs}
+        onWritten={(m) => {
+          setMessage(m);
+          refreshSelection();
+        }}
+      />
 
       <ExtractPanel
         doc={docs.find((d) => d.docId === docId)}

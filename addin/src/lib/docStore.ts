@@ -45,3 +45,5 @@ export function toBase64(bytes: ArrayBuffer): string {
 export function fromBase64(base64: string): ArrayBuffer {
   return Uint8Array.from(atob(base64), (c) => c.charCodeAt(0)).buffer;
 }
+
+export const deleteDoc = (docId: string) => run("readwrite", (s) => s.delete(docId)).then(() => undefined);
