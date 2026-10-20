@@ -138,7 +138,11 @@ export function Viewer({ params }: { params: URLSearchParams }) {
           <div
             className={`highlight ${mode}`}
             style={{ left: shown.x, top: shown.y, width: shown.width, height: shown.height }}
-            ref={(el) => mode === "trace" && el?.scrollIntoView({ block: "center" })}
+            // Scroll only this window: scrollIntoView also scrolls the Excel page
+            // hosting the dialog, which pushed its close button off screen.
+            ref={(el) => {
+              if (mode === "trace" && el) window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - window.innerHeight / 2 });
+            }}
           />
         )}
       </div>

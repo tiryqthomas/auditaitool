@@ -38,3 +38,8 @@ select { font: inherit; width: 100%; margin-top: 8px; }
 .highlight { position: absolute; pointer-events: none; }
 .highlight.tag { border: 2px dashed #0078d4; background: rgba(0, 120, 212, 0.12); }
 .highlight.trace { border: 2px solid #c27c0e; background: rgba(255, 185, 0, 0.3); }
+textarea { font: inherit; width: 100%; box-sizing: border-box; margin: 4px 0; }
+.results { list-style: none; padding: 0; margin: 8px 0; }
+.results li { padding: 4px 6px; border-left: 3px solid; margin-bottom: 4px; }
+.results li.ok { border-color: #107c10; }
+.results li.warn { border-color: #c27c0e; }

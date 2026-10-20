@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { columnLetter } from "./sheet";
 import { normaliseAddress, rowToTag, splitAddress, tagToRow, toCellValue } from "./tags";
 import type { EvidenceTag } from "./types";
 
@@ -39,5 +40,11 @@ describe("toCellValue", () => {
   });
   it("leaves text alone", () => {
     expect(toCellValue("Acme Corp")).toBe("Acme Corp");
+  });
+});
+
+describe("columnLetter", () => {
+  it("converts zero-based indexes to Excel letters", () => {
+    expect([0, 25, 26, 51, 701, 702].map(columnLetter)).toEqual(["A", "Z", "AA", "AZ", "ZZ", "AAA"]);
   });
 });
