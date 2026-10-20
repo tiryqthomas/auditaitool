@@ -25,4 +25,10 @@ export interface EvidenceTag {
 /** Messages the viewer dialog sends back to the task pane. */
 export type ViewerMessage =
   | { type: "region-selected"; docId: string; page: number; box: Box; text: string }
+  | { type: "need-document"; docId: string }
   | { type: "closed" };
+
+/** Messages the task pane sends to the viewer dialog. */
+export type PaneMessage =
+  | { type: "document"; docId: string; name: string; base64: string }
+  | { type: "document-missing"; docId: string };
