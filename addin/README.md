@@ -1,4 +1,4 @@
-# Excel add-in (Phase 0)
+# Excel add-in
 
 The task pane lets you add PDFs, select a cell, drag a box around a value in the document, and link the two. Selecting a tagged cell later shows the quoted source text, and **Open source** reopens the document at that page with the region highlighted.
 
@@ -38,6 +38,15 @@ Then sideload `manifest.local.xml` instead of `manifest.xml`:
 2. Select a cell, click **Tag from document**, drag a box around `$12,480.00`, and click **Use this value**.
 3. The cell gets `12480` with an amber border. Select it again and click **Open source** to jump back to the highlighted total.
 
+## Extract with AI (Phase 1)
+
+1. Open [`samples/revenue-testing-sample.xlsx`](../samples/revenue-testing-sample.xlsx) (headings: Invoice #, Date, Customer, Amount) and add the sample invoice in the Evidence pane.
+2. Select A2:D2 and click **Extract from document**. The column headings are the fields the AI looks for.
+3. Each answer is checked against the PDF's own text before it can be used: the AI's quote must appear in the document and the value must appear in the quote. Anything that fails is listed as needing manual review.
+4. Click **Write proposed values**. Each cell gets an amber *proposed* tag marked AI, traceable with **Open source**.
+
+The AI call runs in the Supabase Edge Function in `../supabase/functions/extract`, which holds the Anthropic API key as the `ANTHROPIC_API_KEY` secret. The add-in only knows the function's URL and the project's public anon key.
+
 ## Tests
 
 ```bash
@@ -45,8 +54,9 @@ npm test         # unit tests for selection geometry and tag storage
 npm run build    # typecheck + production build
 ```
 
-## Phase 0 limits
+## Current limits
 
 - Documents are stored in the browser's IndexedDB on this computer only. Phase 1 moves them to the backend, so a workbook opened elsewhere will say the document isn't available.
 - Digital PDFs only. Scanned pages have no text layer until OCR lands in Phase 2.
 - Tags are always created as *proposed*; there is no verify / reject action yet.
+- AI extraction reads one PDF for one row at a time.
