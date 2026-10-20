@@ -4,6 +4,7 @@ import { sha256Hex } from "../lib/hash";
 import { addTag, findTag } from "../lib/tags";
 import type { EvidenceTag } from "../lib/types";
 import { openViewer } from "./dialog";
+import { ExtractPanel } from "./ExtractPanel";
 
 async function activeCellAddress(): Promise<string> {
   return Excel.run(async (context) => {
@@ -111,7 +112,7 @@ export function App() {
         {tag ? (
           <div className="tag-card">
             <p>
-              <span className={`status ${tag.status}`}>{tag.status}</span> {tag.docName}, page {tag.page}
+              <span className={`status ${tag.status}`}>{tag.status}</span> {tag.method === "ai" ? "AI · " : ""}{tag.docName}, page {tag.page}
             </p>
             <blockquote>{tag.quotedText}</blockquote>
             <button onClick={traceToSource}>Open source</button>
@@ -125,6 +126,14 @@ export function App() {
           </button>
         )}
       </section>
+
+      <ExtractPanel
+        doc={docs.find((d) => d.docId === docId)}
+        onWritten={() => {
+          setMessage("Wrote AI values as proposed. Review each one with Open source.");
+          refreshSelection();
+        }}
+      />
 
       {message && <p className="muted">{message}</p>}
     </main>
