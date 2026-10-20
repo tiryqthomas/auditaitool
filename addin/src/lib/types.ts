@@ -20,6 +20,11 @@ export interface EvidenceTag {
   method: "manual" | "ai";
   status: TagStatus;
   createdAt: string; // ISO timestamp
+  // Set when an auditor signs off. Each sign-off is a new row, so the
+  // _Evidence sheet keeps the full history of who decided what and when.
+  reviewedBy?: string;
+  reviewedAt?: string; // ISO timestamp
+  note?: string;
 }
 
 /** Messages the viewer dialog sends back to the task pane. */

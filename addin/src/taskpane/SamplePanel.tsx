@@ -5,7 +5,7 @@ import { checkAgainstDocument } from "../lib/extraction";
 import { loadPdf, pageTextRuns } from "../lib/pdf";
 import { planSample, type CellOutcome, type DocResult, type SamplePlan } from "../lib/sample";
 import { readSampleTable } from "../lib/sheet";
-import { addTags } from "../lib/tags";
+import { addTags, awaitingReview, latestForCell, readTags } from "../lib/tags";
 import type { EvidenceTag } from "../lib/types";
 
 const PARALLEL = 3;
@@ -105,11 +105,19 @@ export function SamplePanel({ docs, onWritten }: { docs: StoredDoc[]; onWritten:
   const write = async () => {
     if (!plan) return;
     const now = new Date().toISOString();
+    const existing = await readTags();
     const writes: { tag: EvidenceTag; value?: string }[] = [];
+    let signedOff = 0;
     for (const r of plan.rows) {
       if (!r.doc) continue;
       for (const o of r.outcomes) {
         if (o.kind === "unsupported") continue;
+        // A re-run never undoes an auditor's sign-off.
+        const current = latestForCell(existing, o.cell.address);
+        if (current && !awaitingReview(current)) {
+          signedOff++;
+          continue;
+        }
         writes.push({
           tag: {
             tagId: crypto.randomUUID(),
@@ -134,7 +142,8 @@ export function SamplePanel({ docs, onWritten }: { docs: StoredDoc[]; onWritten:
       setPlan(null);
       onWritten(
         `Tagged ${writes.length} cells.` +
-          (exceptions ? ` ${exceptions} exception${exceptions === 1 ? "" : "s"} marked red for your review.` : ""),
+          (exceptions ? ` ${exceptions} exception${exceptions === 1 ? "" : "s"} marked red for your review.` : "") +
+          (signedOff ? ` Skipped ${signedOff} already signed off.` : ""),
       );
     } catch (e) {
       setError((e as Error).message);

@@ -6,7 +6,7 @@ See [docs/build-plan.md](docs/build-plan.md) for the architecture and phased roa
 
 ## Status
 
-**Phase 0: click-to-trace spike.** Manual tagging only, documents kept in the browser. No AI and no backend yet.
+**Phase 1: AI-assisted invoice vouching.** Click-to-trace tags, AI extraction for one row or a whole sample (checked against the PDF text), and auditor sign-off with a review history. Documents are still kept in the browser.
 
 ## Layout
 

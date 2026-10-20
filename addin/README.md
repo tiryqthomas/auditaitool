@@ -60,6 +60,16 @@ With the sample files you should see 10442 agree, an amount exception on 10443 (
 
 The AI call runs in the Supabase Edge Function in `../supabase/functions/extract`, which holds the Anthropic API key as the `ANTHROPIC_API_KEY` secret. The add-in only knows the function's URL and the project's public anon key.
 
+## Sign off
+
+Every value the add-in writes starts out awaiting review (amber *proposed*, or red when the AI flagged an exception). Nothing counts as reviewed until an auditor signs it off.
+
+1. Select a tagged cell and check it with **Open source**.
+2. Enter your name or initials under **Reviewer** (remembered on this computer).
+3. Click **Verify**, **Reject** or **Mark exception**. Reject and exception need a note, for example "Invoice shows 7,530.00; recorded 7,350.00".
+
+The cell's border turns green (verified) or red (rejected, exception), and its value is never changed. Each sign-off is added as a new row on the hidden `_Evidence` sheet with the reviewer, time and note, so **History** on the tag shows every decision on that cell. The **Review** section counts signed-off cells and **Next to review** jumps to the next cell still waiting. Re-running **Fill sample** skips cells that are already signed off.
+
 ## Tests
 
 ```bash
@@ -71,5 +81,5 @@ npm run build    # typecheck + production build
 
 - Documents are stored in the browser's IndexedDB on this computer only. Phase 1 moves them to the backend, so a workbook opened elsewhere will say the document isn't available.
 - Digital PDFs only. Scanned pages have no text layer until OCR lands in Phase 2.
-- Tags are always created as *proposed*; there is no verify / reject action yet.
+- The reviewer name is typed in, not tied to a Microsoft account, so sign-offs are only as reliable as the name entered.
 - AI extraction reads one PDF for one row at a time.

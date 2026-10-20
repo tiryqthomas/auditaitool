@@ -1,7 +1,18 @@
 import { useCallback, useEffect, useState, type ChangeEvent } from "react";
 import { deleteDoc, listDocs, putDoc, type StoredDoc } from "../lib/docStore";
 import { sha256Hex } from "../lib/hash";
-import { addTag, findTag } from "../lib/tags";
+import {
+  addTag,
+  historyForCell,
+  latestForCell,
+  nextUnreviewed,
+  readTags,
+  reviewTag,
+  selectCell,
+  summarise,
+  type ReviewDecision,
+  type ReviewSummary,
+} from "../lib/tags";
 import type { EvidenceTag } from "../lib/types";
 import { openViewer } from "./dialog";
 import { ExtractPanel } from "./ExtractPanel";
@@ -16,11 +27,45 @@ async function activeCellAddress(): Promise<string> {
   });
 }
 
+const REVIEWER_KEY = "audit-evidence.reviewer";
+
+function loadReviewer(): string {
+  try {
+    return localStorage.getItem(REVIEWER_KEY) ?? "";
+  } catch {
+    return "";
+  }
+}
+
+function saveReviewer(name: string) {
+  try {
+    localStorage.setItem(REVIEWER_KEY, name);
+  } catch {
+    // Storage can be blocked; the name then lasts for this session only.
+  }
+}
+
+const DECISION_LABEL: Record<EvidenceTag["status"], string> = {
+  proposed: "Proposed",
+  verified: "Verified",
+  rejected: "Rejected",
+  exception: "Exception",
+};
+
+function formatWhen(iso: string): string {
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? iso : d.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+}
+
 export function App() {
   const [docs, setDocs] = useState<StoredDoc[]>([]);
   const [docId, setDocId] = useState("");
   const [cell, setCell] = useState("");
   const [tag, setTag] = useState<EvidenceTag | undefined>();
+  const [history, setHistory] = useState<EvidenceTag[]>([]);
+  const [summary, setSummary] = useState<ReviewSummary | undefined>();
+  const [reviewer, setReviewer] = useState(loadReviewer);
+  const [note, setNote] = useState("");
   const [message, setMessage] = useState("");
 
   const refreshDocs = useCallback(async () => {
@@ -31,8 +76,11 @@ export function App() {
 
   const refreshSelection = useCallback(async () => {
     const address = await activeCellAddress();
+    const tags = await readTags();
     setCell(address);
-    setTag(await findTag(address));
+    setTag(latestForCell(tags, address));
+    setHistory(historyForCell(tags, address));
+    setSummary(summarise(tags));
   }, []);
 
   useEffect(() => {
@@ -42,6 +90,9 @@ export function App() {
       refreshSelection();
     });
   }, [refreshDocs, refreshSelection]);
+
+  // A note belongs to the cell it was typed for.
+  useEffect(() => setNote(""), [cell]);
 
   const onUpload = async (e: ChangeEvent<HTMLInputElement>) => {
     for (const file of Array.from(e.target.files ?? [])) {
@@ -88,6 +139,30 @@ export function App() {
     });
   };
 
+  const signOff = async (decision: ReviewDecision) => {
+    if (!tag) return;
+    try {
+      await reviewTag(tag, decision, reviewer, note);
+      saveReviewer(reviewer.trim());
+      setNote("");
+      setMessage(`${DECISION_LABEL[decision]} ${cell}.`);
+      await refreshSelection();
+    } catch (e) {
+      setMessage(e instanceof Error ? e.message : String(e));
+    }
+  };
+
+  const goToNextUnreviewed = async () => {
+    const next = nextUnreviewed(await readTags(), cell);
+    if (!next) {
+      setMessage("Every tagged cell has been signed off.");
+      return;
+    }
+    await selectCell(next.cell);
+    // The selection event refreshes the pane, but not every host fires it for programmatic selects.
+    await refreshSelection();
+  };
+
   const traceToSource = () => {
     if (!tag) return;
     openViewer({ docId: tag.docId, mode: "trace", page: tag.page, box: tag.box }, () => undefined);
@@ -131,10 +206,55 @@ export function App() {
               <span className={`status ${tag.status}`}>{tag.status}</span> {tag.method === "ai" ? "AI · " : ""}{tag.docName}, page {tag.page}
             </p>
             <blockquote>{tag.quotedText}</blockquote>
+            {tag.reviewedBy && tag.reviewedAt && (
+              <p className="muted">
+                {DECISION_LABEL[tag.status]} by {tag.reviewedBy} on {formatWhen(tag.reviewedAt)}
+                {tag.note ? `: ${tag.note}` : ""}
+              </p>
+            )}
             <button onClick={traceToSource}>Open source</button>
             <button onClick={tagFromDocument} disabled={!docId}>
               Re-tag
             </button>
+
+            <div className="review">
+              <label>
+                Reviewer
+                <input value={reviewer} onChange={(e) => setReviewer(e.target.value)} placeholder="Name or initials" />
+              </label>
+              <textarea
+                rows={2}
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                placeholder="Note (required to reject or mark an exception)"
+              />
+              <button onClick={() => signOff("verified")} disabled={!reviewer.trim()}>
+                Verify
+              </button>
+              <button onClick={() => signOff("rejected")} disabled={!reviewer.trim() || !note.trim()}>
+                Reject
+              </button>
+              <button onClick={() => signOff("exception")} disabled={!reviewer.trim() || !note.trim()}>
+                Mark exception
+              </button>
+            </div>
+
+            {history.length > 1 && (
+              <details>
+                <summary>History ({history.length})</summary>
+                <ol className="history">
+                  {history.map((h, i) => (
+                    <li key={i}>
+                      {DECISION_LABEL[h.status]}
+                      {h.reviewedBy && h.reviewedAt
+                        ? ` by ${h.reviewedBy}, ${formatWhen(h.reviewedAt)}`
+                        : `, ${h.method === "ai" ? "AI" : "tagged"} ${formatWhen(h.createdAt)}`}
+                      {h.note ? `: ${h.note}` : ""}
+                    </li>
+                  ))}
+                </ol>
+              </details>
+            )}
           </div>
         ) : (
           <button onClick={tagFromDocument} disabled={!docId || !cell}>
@@ -142,6 +262,21 @@ export function App() {
           </button>
         )}
       </section>
+
+      {summary && summary.total > 0 && (
+        <section>
+          <h2>Review</h2>
+          <p>
+            {summary.total - summary.awaiting} of {summary.total} tagged cells signed off
+          </p>
+          <p className="muted">
+            {summary.verified} verified · {summary.exception} exception{summary.exception === 1 ? "" : "s"} · {summary.rejected} rejected · {summary.awaiting} to review
+          </p>
+          <button onClick={goToNextUnreviewed} disabled={summary.awaiting === 0}>
+            Next to review
+          </button>
+        </section>
+      )}
 
       <SamplePanel
         docs={docs}
