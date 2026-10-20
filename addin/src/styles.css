@@ -1,0 +1,40 @@
+:root {
+  font-family: "Segoe UI", system-ui, sans-serif;
+  font-size: 14px;
+  color: #201f1e;
+  background: #fff;
+}
+body { margin: 0; }
+button, .upload {
+  font: inherit;
+  padding: 4px 12px;
+  margin: 4px 4px 4px 0;
+  border: 1px solid #8a8886;
+  border-radius: 2px;
+  background: #fff;
+  cursor: pointer;
+}
+button:disabled { opacity: 0.5; cursor: default; }
+select { font: inherit; width: 100%; margin-top: 8px; }
+.muted { color: #605e5c; }
+.error { color: #a4262c; padding: 16px; }
+
+.pane { padding: 12px; }
+.pane h2 { font-size: 15px; margin: 16px 0 8px; }
+.cell { font-family: Consolas, monospace; }
+.tag-card blockquote { margin: 8px 0; padding: 6px 8px; background: #f3f2f1; white-space: pre-wrap; }
+.status { font-size: 12px; padding: 1px 6px; border-radius: 8px; color: #fff; text-transform: uppercase; }
+.status.proposed { background: #c27c0e; }
+.status.verified { background: #107c10; }
+.status.rejected, .status.exception { background: #a4262c; }
+
+.viewer-bar { position: sticky; top: 0; z-index: 2; display: flex; gap: 8px; align-items: center; padding: 8px 12px; background: #f3f2f1; border-bottom: 1px solid #e1dfdd; }
+.viewer-bar .hint { color: #605e5c; margin-left: auto; }
+.selection { display: flex; gap: 8px; align-items: center; padding: 8px 12px; background: #fff4ce; }
+.selection code { white-space: pre-wrap; flex: 1; }
+.page { position: relative; width: fit-content; margin: 12px auto; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2); user-select: none; }
+.page canvas { display: block; }
+.page.taggable { cursor: crosshair; }
+.highlight { position: absolute; pointer-events: none; }
+.highlight.tag { border: 2px dashed #0078d4; background: rgba(0, 120, 212, 0.12); }
+.highlight.trace { border: 2px solid #c27c0e; background: rgba(255, 185, 0, 0.3); }
