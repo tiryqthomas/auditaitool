@@ -6,12 +6,14 @@ export interface ViewerOptions {
   mode: "tag" | "trace";
   page?: number;
   box?: Box;
+  cell?: string; // spreadsheet evidence: the source cell to highlight
 }
 
 /** Opens the source viewer in an Office dialog and relays its messages. */
 export function openViewer(opts: ViewerOptions, onMessage: (m: ViewerMessage, close: () => void) => void): void {
   const q = new URLSearchParams({ docId: opts.docId, mode: opts.mode });
   if (opts.page) q.set("page", String(opts.page));
+  if (opts.cell) q.set("cell", opts.cell);
   if (opts.box) {
     q.set("x", String(opts.box.x));
     q.set("y", String(opts.box.y));

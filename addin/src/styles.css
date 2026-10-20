@@ -51,3 +51,20 @@ button.link { border: none; background: none; padding: 0; margin: 0; color: #007
 .review label { display: block; margin-bottom: 4px; }
 .review input { font: inherit; width: 100%; box-sizing: border-box; margin-top: 2px; }
 .history { margin: 4px 0; padding-left: 20px; font-size: 12px; }
+.grid-wrap { padding: 8px; }
+.grid { border-collapse: collapse; font-size: 12px; background: #fff; }
+.grid th { background: #f3f2f1; color: #605e5c; font-weight: normal; padding: 2px 6px; border: 1px solid #e1dfdd; }
+.grid tbody th { position: sticky; left: 0; }
+.viewer-top { position: sticky; top: 0; z-index: 2; }
+.viewer-top .viewer-bar { position: static; }
+.grid td { border: 1px solid #e1dfdd; padding: 2px 6px; white-space: nowrap; max-width: 260px; overflow: hidden; text-overflow: ellipsis; }
+.grid td.num { text-align: right; }
+.grid.taggable td { cursor: pointer; }
+.grid.taggable td:hover { background: #eff6fc; }
+.grid td.picked.tag { outline: 2px dashed #0078d4; background: rgba(0, 120, 212, 0.12); }
+.grid td.picked.trace { outline: 2px solid #c27c0e; background: rgba(255, 185, 0, 0.3); }
+.hits { list-style: none; padding: 0; margin: 6px 0; }
+.hits li { padding: 6px 0; border-bottom: 1px solid #edebe9; }
+.hits .where { font-family: monospace; font-size: 12px; }
+.viewer-bar select { width: auto; margin-top: 0; }
+p.warn { color: #8a5a00; margin: 4px 0; }

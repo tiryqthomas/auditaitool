@@ -6,7 +6,7 @@ export const EVIDENCE_SHEET = "_Evidence";
 
 const COLUMNS = [
   "tagId", "cell", "docId", "docName", "page", "x", "y", "width", "height",
-  "quotedText", "method", "status", "createdAt", "reviewedBy", "reviewedAt", "note",
+  "quotedText", "method", "status", "createdAt", "reviewedBy", "reviewedAt", "note", "sourceCell",
 ] as const;
 
 const STATUS_COLOR: Record<EvidenceTag["status"], string> = {
@@ -19,13 +19,13 @@ const STATUS_COLOR: Record<EvidenceTag["status"], string> = {
 export function tagToRow(t: EvidenceTag): (string | number)[] {
   return [
     t.tagId, t.cell, t.docId, t.docName, t.page, t.box.x, t.box.y, t.box.width, t.box.height,
-    t.quotedText, t.method, t.status, t.createdAt, t.reviewedBy ?? "", t.reviewedAt ?? "", t.note ?? "",
+    t.quotedText, t.method, t.status, t.createdAt, t.reviewedBy ?? "", t.reviewedAt ?? "", t.note ?? "", t.sourceCell ?? "",
   ];
 }
 
 export function rowToTag(row: unknown[]): EvidenceTag {
-  const [tagId, cell, docId, docName, page, x, y, width, height, quotedText, method, status, createdAt, reviewedBy, reviewedAt, note] = row;
-  // Rows written before sign-off existed have no review columns.
+  const [tagId, cell, docId, docName, page, x, y, width, height, quotedText, method, status, createdAt, reviewedBy, reviewedAt, note, sourceCell] = row;
+  // Rows written by older versions lack the later columns.
   const optional = (v: unknown) => (v === undefined || v === "" ? undefined : String(v));
   return {
     tagId: String(tagId),
@@ -41,6 +41,7 @@ export function rowToTag(row: unknown[]): EvidenceTag {
     reviewedBy: optional(reviewedBy),
     reviewedAt: optional(reviewedAt),
     note: optional(note),
+    sourceCell: optional(sourceCell),
   };
 }
 

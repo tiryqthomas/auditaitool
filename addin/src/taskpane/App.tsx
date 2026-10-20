@@ -14,9 +14,11 @@ import {
   type ReviewSummary,
 } from "../lib/tags";
 import type { EvidenceTag } from "../lib/types";
+import { EVIDENCE_ACCEPT, isSpreadsheet } from "../lib/spreadsheet";
 import { openViewer } from "./dialog";
 import { ExtractPanel } from "./ExtractPanel";
 import { SamplePanel } from "./SamplePanel";
+import { SearchPanel, type SheetResult } from "./SearchPanel";
 
 async function activeCellAddress(): Promise<string> {
   return Excel.run(async (context) => {
@@ -52,6 +54,16 @@ const DECISION_LABEL: Record<EvidenceTag["status"], string> = {
   exception: "Exception",
 };
 
+/** Where a tag's value came from: a PDF page or a spreadsheet cell. */
+function sourceLabel(t: EvidenceTag): string {
+  return t.sourceCell ? `${t.docName}, ${t.sourceCell}` : `${t.docName}, page ${t.page}`;
+}
+
+/** What a spreadsheet tag shows as its quote: the value and its row and column labels. */
+const quoteFor = (text: string, context: string) => (context ? `${text} (${context})` : text);
+
+const NO_BOX = { x: 0, y: 0, width: 0, height: 0 };
+
 function formatWhen(iso: string): string {
   const d = new Date(iso);
   return Number.isNaN(d.getTime()) ? iso : d.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
@@ -67,6 +79,9 @@ export function App() {
   const [reviewer, setReviewer] = useState(loadReviewer);
   const [note, setNote] = useState("");
   const [message, setMessage] = useState("");
+
+  const selectedDoc = docs.find((d) => d.docId === docId);
+  const pdfs = docs.filter((d) => !isSpreadsheet(d.name));
 
   const refreshDocs = useCallback(async () => {
     const all = await listDocs();
@@ -117,26 +132,53 @@ export function App() {
     const doc = docs.find((d) => d.docId === docId);
     if (!doc || !targetCell) return;
     openViewer({ docId: doc.docId, mode: "tag" }, async (m, close) => {
-      if (m.type !== "region-selected") return;
+      if (m.type !== "region-selected" && m.type !== "cell-selected") return;
       close();
-      await addTag(
-        {
-          tagId: crypto.randomUUID(),
-          cell: targetCell,
-          docId: doc.docId,
-          docName: doc.name,
-          page: m.page,
-          box: m.box,
-          quotedText: m.text,
-          method: "manual",
-          status: "proposed",
-          createdAt: new Date().toISOString(),
-        },
-        m.text,
-      );
-      setMessage(`Tagged ${targetCell} to ${doc.name}, page ${m.page}.`);
+      const base = {
+        tagId: crypto.randomUUID(),
+        cell: targetCell,
+        docId: doc.docId,
+        docName: doc.name,
+        method: "manual" as const,
+        status: "proposed" as const,
+        createdAt: new Date().toISOString(),
+      };
+      const tag: EvidenceTag =
+        m.type === "region-selected"
+          ? { ...base, page: m.page, box: m.box, quotedText: m.text }
+          : { ...base, page: 0, box: NO_BOX, sourceCell: m.sourceCell, quotedText: quoteFor(m.text, m.context) };
+      await addTag(tag, m.text);
+      setMessage(`Tagged ${targetCell} to ${sourceLabel(tag)}.`);
       refreshSelection();
     });
+  };
+
+  const showSheetResult = (r: SheetResult) => {
+    if (selectedDoc) openViewer({ docId: selectedDoc.docId, mode: "trace", cell: `${r.sheet}!${r.address}` }, () => undefined);
+  };
+
+  const useSheetResult = async (r: SheetResult) => {
+    if (!selectedDoc || !cell) return;
+    const tag: EvidenceTag = {
+      tagId: crypto.randomUUID(),
+      cell,
+      docId: selectedDoc.docId,
+      docName: selectedDoc.name,
+      page: 0,
+      box: NO_BOX,
+      sourceCell: `${r.sheet}!${r.address}`,
+      quotedText: quoteFor(r.text, r.context),
+      method: r.method,
+      status: "proposed",
+      createdAt: new Date().toISOString(),
+    };
+    try {
+      await addTag(tag, r.text);
+      setMessage(`Tagged ${cell} to ${sourceLabel(tag)}.`);
+      await refreshSelection();
+    } catch (e) {
+      setMessage((e as Error).message);
+    }
   };
 
   const signOff = async (decision: ReviewDecision) => {
@@ -165,7 +207,12 @@ export function App() {
 
   const traceToSource = () => {
     if (!tag) return;
-    openViewer({ docId: tag.docId, mode: "trace", page: tag.page, box: tag.box }, () => undefined);
+    openViewer(
+      tag.sourceCell
+        ? { docId: tag.docId, mode: "trace", cell: tag.sourceCell }
+        : { docId: tag.docId, mode: "trace", page: tag.page, box: tag.box },
+      () => undefined,
+    );
   };
 
   return (
@@ -173,8 +220,8 @@ export function App() {
       <section>
         <h2>Evidence</h2>
         <label className="upload">
-          Add PDFs
-          <input type="file" accept="application/pdf" multiple onChange={onUpload} hidden />
+          Add documents
+          <input type="file" accept={EVIDENCE_ACCEPT} multiple onChange={onUpload} hidden />
         </label>
         {docs.length === 0 ? (
           <p className="muted">No documents yet.</p>
@@ -197,13 +244,17 @@ export function App() {
         )}
       </section>
 
+      {selectedDoc && isSpreadsheet(selectedDoc.name) && (
+        <SearchPanel doc={selectedDoc} cell={cell} onShow={showSheetResult} onUse={useSheetResult} />
+      )}
+
       <section>
         <h2>Selected cell</h2>
         <p className="cell">{cell || "…"}</p>
         {tag ? (
           <div className="tag-card">
             <p>
-              <span className={`status ${tag.status}`}>{tag.status}</span> {tag.method === "ai" ? "AI · " : ""}{tag.docName}, page {tag.page}
+              <span className={`status ${tag.status}`}>{tag.status}</span> {tag.method === "ai" ? "AI · " : ""}{sourceLabel(tag)}
             </p>
             <blockquote>{tag.quotedText}</blockquote>
             {tag.reviewedBy && tag.reviewedAt && (
@@ -279,7 +330,7 @@ export function App() {
       )}
 
       <SamplePanel
-        docs={docs}
+        docs={pdfs}
         onWritten={(m) => {
           setMessage(m);
           refreshSelection();
@@ -287,7 +338,7 @@ export function App() {
       />
 
       <ExtractPanel
-        doc={docs.find((d) => d.docId === docId)}
+        doc={selectedDoc && !isSpreadsheet(selectedDoc.name) ? selectedDoc : undefined}
         onWritten={() => {
           setMessage("Wrote AI values as proposed. Review each one with Open source.");
           refreshSelection();

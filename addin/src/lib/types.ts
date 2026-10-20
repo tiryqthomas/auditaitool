@@ -14,8 +14,9 @@ export interface EvidenceTag {
   cell: string; // e.g. Sheet1!B4
   docId: string; // SHA-256 of the original file
   docName: string;
-  page: number; // 1-based
-  box: Box;
+  page: number; // 1-based; 0 for spreadsheet evidence
+  box: Box; // zero for spreadsheet evidence
+  sourceCell?: string; // spreadsheet evidence: the source cell, e.g. Sales Ledger!D14
   quotedText: string;
   method: "manual" | "ai";
   status: TagStatus;
@@ -30,6 +31,7 @@ export interface EvidenceTag {
 /** Messages the viewer dialog sends back to the task pane. */
 export type ViewerMessage =
   | { type: "region-selected"; docId: string; page: number; box: Box; text: string }
+  | { type: "cell-selected"; docId: string; sourceCell: string; text: string; context: string }
   | { type: "need-document"; docId: string }
   | { type: "closed" };
 
